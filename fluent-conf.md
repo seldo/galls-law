@@ -3,15 +3,15 @@
 # [fit] monolith
 # [fit] and lived to tell the tale
 
-^ npm last year shipped a big rewrite of its registry service, a successful rewrite. this is such an unusual event in my career that I thought I'd talk a bit about why it's hard & how we did it. Let's start with Gall's Law.
+^ npm last year shipped a big rewrite of its registry service, a successful rewrite. this is such an unusual event in our careers that we thought we'd talk a bit about why it's hard & how we did it. Let's start with Gall's Law.
 
 ---
 
-![left](images/bumper2_nasa_big.jpg)
-# [fit] C J Silverio
-## [fit] vp of engineering, ![](images/npm.png)
+![left](images/alpaca.jpg)
+# [fit] Laurie Voss
+## [fit] CTO, ![](images/npm.png)
 
-## [fit] @ceejbot
+## [fit] @seldo
 
 ^ How many of you have ever used npm to install something? How many of you use it daily? The story I'm about to tell will be very relevant to you both because the work we did affected you & because the technique I'm about to describe will be helpful.
 
@@ -23,7 +23,7 @@
 # [fit] invariably found to have evolved
 # [fit] from a simple system that worked.
 
-^ A complex system that works is invariably found to have evolved from a simple system that worked. A complex system designed from scratch never works and cannot be patched up to make it work. You have to start over with a working simple system.
+^ Gall's law says: a complex system that works is invariably found to have evolved from a simple system that worked. A complex system designed from scratch never works and cannot be patched up to make it work. You have to start over with a working simple system.
 
 ---
 
@@ -45,7 +45,7 @@
 
 ![](images/Monolith-Sun-Moon.png)
 
-^ Yay monoliths! What's a monolith besides something that has Richard Strauss accompanying it?
+^ What you end up with is a monolith! What's a monolith besides a big black thing with Richard Strauss musical accompaniment?
 
 ---
 
@@ -53,7 +53,7 @@
 # [fit] monolith
 # [fit] everything in one process
 
-^ Disparaging term for everything in one process. Really easy to write, often easy to deploy. Easy to think about. Easy to squish around as you're discovering what your app needs to be. npm registry started with one of these inside couchdb.
+^ A monolith is a disparaging term for everything in one process. Really easy to write, often easy to deploy. Easy to think about. Easy to squish around as you're discovering what your app needs to be. npm registry started with one of these inside couchdb.
 
 ---
 
@@ -76,13 +76,13 @@
 # [fit] success!
 # [fit] now scale it.
 
-^ Your next job is to SURVIVE the fact that people want to use it. Recall the story of the early days of Twitter, when they built your timeline by querying mysql. That fell over hard once Twitter started succeeding. Your first reaction is probably to make your monolith bigger, maybe the size of jupiter. That is a really limited reaction.
+^ Success happens. Nightmare! Your next job is to SURVIVE the fact that people want to use it. Recall the story of the early days of Twitter, when they built your timeline by querying mysql. That fell over hard once Twitter started succeeding. Your first reaction is probably to make your monolith bigger, maybe the size of Jupiter. (Geddit? Jupiter?)
 
 ---
 
 ![](images/easterisland021.jpg)
 
-^ The next thing you do is you start making lots of copies of your now-huge monolith.
+^ The next thing you do is you start making lots of copies of your now-huge monolith. This was also how Arthur C. Clarke scaled his monolith, as it happens.
 
 ---
 
@@ -91,16 +91,13 @@
 # [fit] scaling monoliths
 # [fit] many copies of the full thing
 
-^ Scaling horizontally. You've got a single widget. You just make more copies of it & load balance among them. If your database can cope with that, you're in good shape for a while. But sometimes you *really* succeed.
+^ Scaling horizontally is very effective! You've got a single widget. You just make more copies of it & load balance among them. If your database can cope with that, you're in good shape for a while. But sometimes you *really* succeed.
 
 ---
 
-![](images/easterisland021.jpg)
-# [fit] explosion of node in webdev
-# [fit] resulted in exponential growth
-# [fit] of the npm registry
+![fit](images/exponential-growth.png)
 
-^ This is all of YOU using node to write web apps. This was node growing & the registry being good enough at making its users happy.
+^ This is all of YOU using node to write web apps. This was node growing & the registry being good enough at making its users happy. We are now approaching a billion downloads a *week*.
 
 ---
 
@@ -108,14 +105,14 @@
 # [fit] exponential monoliths
 # [fit] were going to be expensive
 
-^ Had to scale some way other than making a lot of copies of our couchdb.
+^ Exponentially larger numbers of monoliths get expensive. We have to scale some way other than making a lot of copies of our couchdb.
 
 ---
 
 # [fit] splitting the
 # [fit] monolith
 
-^ You need to scale differently: you break up the monolith.
+^ We need to scale differently: we break up the monolith.
 
 ---
 
@@ -128,14 +125,14 @@
 # [fit] Your monolith is complex.
 # [fit] A split system is more complex.
 
-^ Complexity is the enemy of everything.
+^ But this adds complexity. And complexity is the enemy of everything.
 
 ---
 
 # [fit] what did that Gall guy say about
 # [fit] complex working systems?
 
-^ Didn't we just hear something about complex systems? Your target for a rewrite is the full complicated thing that's running in production today, not the simple thing you started with. Famous problem: second system effect.
+^ And didn't we just hear something about complex systems? Your target for a rewrite is the full complicated thing that's running in production today, not the simple thing you started with. Famous problem: second system effect.
 
 ---
 
@@ -143,7 +140,7 @@
 # [fit] a monolith
 # [fit] successfully?
 
-^ so how? npm is not on fire today, so obviously there's a way.
+^ So how to rewrite without hitting Gall's law, and creating a broken second system? npm is not on fire today, so obviously there's a way.
 
 ---
 
@@ -156,7 +153,7 @@
 # [fit] Q: How do you cheat?
 # [fit] A: By not rewriting the whole thing.
 
-^ There are a lot of options here. I'm going to tell you the one npm took, because it's a networked service. If you're writing web services, this might work for you.
+^ So how do you cheat? By rewriting small pieces. There are a lot of ways to do this. I'm going to tell you the one npm used, because it's a networked service. If you're writing web services, this might work for you.
 
 ---
 
@@ -164,7 +161,7 @@
 # [fit] into a module
 # [fit] with a clearly-defined interface
 
-^ Some part of your system, some feature, can be thought of as a module. Maybe it even is a module inside the monolith.
+^ Find some part of your system, some feature, can be thought of as a module. Maybe it even is a module inside the monolith. This is the heart of modularization. It's how you slice apart code.
 
 ---
 
@@ -172,7 +169,7 @@
 # [fit] second implementation
 # [fit] of that interface
 
-^ This time standalone, outside the monolith.
+^ Then write that module again. This time standalone, outside the monolith. Ideally, make it a tiny slice that answers a whole type of request. Maybe it's login. Maybe it's the home page.
 
 ---
 
@@ -180,7 +177,7 @@
 # [fit] second implementation
 # [fit] with a proxy
 
-^ This is the heart of modularization. It's how you slice apart code. You're going to do it with your services too, by putting them behind a proxy. Proxies let you divide & conquer.
+^ Now put a proxy in front of your monolith, and send just those requests to your new service.
 
 ---
 
@@ -206,7 +203,7 @@
 
 ![fit](images/proxying_1.png)
 
-^ Varnish as a proxy: tarball reads go to nginx. Package metadata reads & writes go to couchdb. This simple technique was our first step to breaking up the monolith. This one change relieved about 90% of our couchdb performance problems.
+^ We used Varnish for our proxy. We sent package downloads to a box full of tarball files with nginx on it. Meanwhile, everything else was still going to couchDB. This simple technique was our first step to breaking up the monolith. This one change relieved about 90% of our couchdb performance problems.
 
 ---
 
@@ -242,7 +239,7 @@
 
 ![fit](images/registry_john_madden.png)
 
-^ Simplified diagram of our services. We changed our platform AND our database. We went from js inside couchdb to js in node services. Also changed how we stored our data. Want to show you something cool.
+^ Here's a simplified diagram of our services. We changed our platform AND our database. We went from js inside couchdb to js in node services. Also changed how we stored our data. Want to show you something cool.
 
 ---
 
@@ -256,7 +253,7 @@
 # [fit] modularity
 # [fit] aka information hiding
 
-^ You think about this at the code level, but here we're doing it at the service level. The implementation of each module is hidden behind the API of the service.
+^ We beat Gall's Law with modularity. We hid the complexity. You think about this at the code level, but here we're doing it at the service level. The implementation of each module is hidden behind the API of the service.
 
 ---
 
@@ -278,28 +275,28 @@
 # [fit] simple working service first
 # [fit] scale it later
 
-^ Don't be ridiculous about scaling, but don't worry about it. You'll be able to afford it later if you've built something people want. Be ruthless about this.
+^ Build first, and scale later. Don't be ridiculous about scaling, but don't worry about it. You'll be able to afford it later if you've built something people want. Be ruthless about this.
 
 ---
 
 # [fit] respect Gall:
 # [fit] rewrite in pieces
 
-^ Avoid complexity of a full rewrite by rewriting small parts. Modularity!
+^ Respect Gall. Avoid complexity of a full rewrite by rewriting small parts. Modularity!
 
 ---
 
 # [fit] use a proxy
 # [fit] to divide & conquer
 
-^ Proxy is a facade in the design patterns sense. It lets you chop up your problem into smaller onces. You can test your assumptions. Send a portion of traffic through & load test. Flip back if you've got bugs.
+^ Use a proxy to divide and conquer. It lets you chop up your problem into smaller ones. You can test your assumptions. Send a portion of traffic through & load test. Flip back if you've got bugs.
 
 ---
 
 # [fit] Be bold
 # [fit] you can change your system
 
-^ I've also seen needed rewrites never even start because of fear. I cannot help you with the politics, but I can tell you that you don't have to be afraid. You can change one small piece of a system at a time. This approach works.
+^ Be bold. I've seen needed rewrites never even start because of fear. I cannot help you with the politics, but I can tell you that you don't have to be afraid. You can change one small piece of a system at a time. This approach works.
 
 ---
 
@@ -307,11 +304,11 @@
 # [fit] that we slowly replaced
 # [fit] the entire npm registry
 
-^ 120 seconds of downtime during the rollout because two humans failed to communicate about something. If I can do it, you can do it.
+^ How well did it work? We rewrote the entire registry, and you didn't notice. Over a year we had 120 seconds of downtime due to exactly 1 bad deploy. If we can do it, you can do it.
 
 ---
 
 # [fit] ![](images/npm.png) loves you
 # [fit] `npm install -g npm@latest`
 
-^ Remember to upgrade.
+^ So thank you! And remember to upgrade your copy of npm.
