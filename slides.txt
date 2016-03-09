@@ -1,0 +1,350 @@
+hi! I'm Laurie
+CTO of npm Inc
+This talk was supposed to be by CJ Silverio
+My wonder VP of engineering
+But she got called for jury duty!
+So I'm filling in
+npm last year shipped a big rewrite of its registry service
+a successful rewrite.
+this is such an unusual event in our careers
+that we thought we'd talk a bit
+about why it's hard & how we did it.
+Let's start with Gall's Law.
+
+---
+
+How many of you have ever used npm to install something?
+How many of you use it daily?
+The story I'm about to tell
+will be very relevant to you 
+both because the work we did affected you
+and because the technique I'm about to describe will be helpful.
+
+---
+
+Gall's law says: 
+a complex system that works 
+is invariably found to have evolved from a simple system that worked. 
+A complex system designed from scratch 
+never works 
+and cannot be patched up to make it work. 
+You have to start over with a working simple system.
+
+---
+
+John Gall: a pediatrician. 
+Interested in systems theory. 
+This is the title of his big book, 
+which is a darkly funny set of observations 
+on systems of all kind. 
+Insight: Systems operate in a constant state of failure.
+Gall is just a bundle of fun here.
+Let's apply this to software systems.
+
+---
+
+Start with a simple system that works: 
+you write a small thing
+and then build on it.
+You've done this! 
+It's how every system builds organically 
+if you don't think about it much but just make things.
+
+---
+
+What you end up with is a monolith
+What's a monolith besides a big black thing
+with Richard Strauss musical accompaniment?
+
+---
+
+A monolith is a disparaging term 
+for everything in one process. 
+Really easy to write, 
+often easy to deploy. 
+Easy to think about. 
+Easy to squish around 
+as you're discovering what your app needs to be.
+npm registry started with one of these inside couchdb.
+
+---
+
+The registry was just fine as a couchdb app
+using couchdb's auth. 
+When there were 10K modules
+practically anything was going to work.
+This illustrates a general true thing:
+when you're small, just about everything works.
+
+---
+
+When you start, 
+your job is to make a thing people want to use.
+It's hard to make something that delights your users
+and is a viable product. 
+You don't have a scaling problem.
+Then, if you're lucky, something terrible happens.
+
+---
+
+Success happens. Nightmare! 
+Your next job is to SURVIVE the fact that people want to use it.
+Recall the story of the early days of Twitter, 
+when they built your timeline by querying mysql. 
+That fell over hard once Twitter started succeeding. 
+Your first reaction is probably to make your monolith bigger, 
+maybe the size of Jupiter. 
+(Geddit? Monoliths? Jupiter?)
+
+---
+
+The next thing you do is
+you start making lots of copies of your now-huge monolith.
+This was also how Arthur C. Clarke scaled his monolith, as it happens.
+
+---
+
+Scaling horizontally is very effective! 
+You've got a single widget. 
+You just make more copies of it 
+and load balance among them. 
+If your database can cope with that, 
+you're in good shape for a while. 
+But sometimes you *really* succeed.
+
+---
+
+This is all of YOU using node to write web apps. 
+This was node growing 
+and the registry being good enough at making its users happy. 
+We are now approaching a billion downloads a *week*.
+
+---
+
+Exponentially larger numbers of monoliths get expensive. 
+We have to scale some way 
+other than making a lot of copies of our couchdb.
+
+---
+
+We need to scale differently: 
+we break up the monolith.
+
+---
+
+Just rewrite it all in a million tiny pieces! 
+no problem!
+
+---
+
+But this adds complexity. 
+And complexity is the enemy of everything.
+
+---
+
+And didn't we just hear something about complex systems? 
+Your target for a rewrite 
+is the full complicated thing that's running in production today
+not the simple thing you started with. 
+Famous problem: second system effect.
+
+---
+
+So how to rewrite without hitting Gall's law, 
+and creating a broken second system? 
+npm is not on fire today, 
+so obviously there's a way.
+
+---
+
+I promised you we'd be cheating. 
+You can't break the law, 
+no matter how tempted you are to argue with it. 
+You have to write simple working systems first.
+
+---
+
+So how do you cheat? 
+By rewriting small pieces. 
+There are a lot of ways to do this. 
+I'm going to tell you the one npm used, 
+because it's a networked service. 
+If you're writing web services, 
+this might work for you.
+
+---
+
+Find some part of your system, 
+some feature, 
+that can be thought of as a module. 
+Maybe it even is a module inside the monolith. 
+This is the heart of modularization. 
+It's how you slice apart code.
+
+---
+
+Then write that module again. 
+This time standalone, outside the monolith. 
+Ideally, make it a tiny slice 
+that answers a whole type of request. 
+Maybe it's login. 
+Maybe it's the home page.
+
+---
+
+Now put a proxy in front of your monolith, 
+and send just those requests to your new service.
+
+---
+
+For you visual thinkers, 
+here's this incredibly simple approach. 
+Let's look at an example.
+
+---
+
+npm registry 1.0: a monolith npm 
+like a lot of systems, was originally very simple. 
+The registry was a few thousand lines of javascript 
+embedded inside CouchDB. 
+Auth was couch's auth. 
+Package tarballs stored inside couch.
+(NOT a good idea)
+
+---
+
+Here's npm's monolith pre-split. 
+Now watch what we do.
+
+---
+
+We used Varnish for our proxy. 
+We sent package downloads to 
+a box full of tarball files with nginx on it. 
+Meanwhile, everything else was still going to couchDB. 
+This simple technique was our first step 
+to breaking up the monolith. 
+This one change relieved 
+about 90% of our couchdb performance problems.
+
+---
+
+You can put some logic into Varnish, 
+but get a lot more mileage out of proxying
+at the application level. 
+Way more control & awareness. 
+We used node. 
+You can use whatever you want.
+
+---
+
+We called it the registry frontdoor, 
+because all traffic goes through it. 
+You'll notice that it's doing nothing right now.
+
+---
+
+now do it again
+
+---
+
+Authorization & package validation 
+are now pulled out of couch into services. 
+Woah, we just rewrote two things.
+
+---
+
+and again
+
+---
+
+Here's a simplified diagram of our services. 
+We changed our platform AND our database. 
+We went from js inside couchdb 
+to js in node services. 
+Also changed how we stored our data. 
+Want to show you something cool.
+
+---
+
+Notice something here? 
+It's our original monolith, 
+still there, chugging along. 
+What it does is reduced to the things couchdb is fantastic at: 
+storing json blobs 
+and replicating the data to the rest of our system.
+
+---
+
+We beat Gall's Law with modularity. 
+We hid the complexity. 
+You think about this at the code level, 
+but here we're doing it at the service level. 
+The implementation of each module 
+is hidden behind the API of the service.
+
+---
+
+Gall's Law is still in force. 
+We still must write simple things 
+and build from there. 
+In this case, the new simple system is the new service. 
+The existing working system evolved slightly to be more complex.
+
+---
+
+This approach is much safer than a total rewrite. 
+You can test each piece separately. 
+This system is getting steadily more complex, 
+but that's okay. 
+You're evolving a working system. 
+This approach won't always be what you need, 
+but it is fantastic when you do. 
+Put it into your back pocket 
+and pull it out whenever you're looking at a rewrite.
+
+---
+
+Build first, and scale later. 
+Don't be ridiculous about scaling, 
+but don't worry about it. 
+You'll be able to afford it later 
+if you've built something people want. 
+Be ruthless about this.
+
+---
+
+Respect Gall. 
+Avoid complexity of a full rewrite 
+by rewriting small parts. Modularity!
+
+---
+
+Use a proxy to divide and conquer. 
+It lets you chop up your problem into smaller ones. 
+You can test your assumptions. 
+Send a portion of traffic through & load test. 
+Flip back if you've got bugs.
+
+---
+
+Be bold. 
+I've seen needed rewrites never even start because of fear. 
+I cannot help you with the politics, 
+but I can tell you that you don't have to be afraid. 
+You can change one small piece of a system at a time. 
+This approach works.
+
+---
+
+How well did it work? 
+We rewrote the entire registry last year,
+and you didn't even notice. 
+Over a year we had 120 seconds of downtime
+due to exactly 1 bad deploy. 
+If we can do it, you can do it.
+
+---
+
+So thank you! 
+And remember to upgrade your copy of npm.
